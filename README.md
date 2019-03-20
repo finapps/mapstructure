@@ -14,7 +14,7 @@ structure.
 Standard `go get`:
 
 ```
-$ go get github.com/goinggo/mapstructure
+$ go get github.com/finapps/mapstructure
 ```
 
 ## Usage & Example
@@ -108,7 +108,7 @@ type NumberFormat struct {
 		GroupingSeparator string `jpath:"userContext.preferenceInfo.numberFormat.groupingSeparator"`
 		GroupPattern      string `jpath:"userContext.preferenceInfo.numberFormat.groupPattern"`
 	}
-	
+
 type User struct {
 		Session   string   `jpath:"userContext.cobrandConversationCredentials.sessionToken"`
 		CobrandId int      `jpath:"userContext.cobrandId"`

@@ -18,6 +18,18 @@ type Basic struct {
 	Vdata   interface{}
 }
 
+type BasicPointer struct {
+	Vstring *string
+	Vint    *int
+	Vuint   *uint
+	Vbool   *bool
+	Vfloat  *float64
+	Vextra  *string
+	vsilent *bool
+	Vdata   *interface{}
+	Vnil    *bool
+}
+
 type Embedded struct {
 	Basic
 	Vunique string
@@ -668,7 +680,8 @@ func TestMetadata(t *testing.T) {
 		t.Fatalf("err: %s", err.Error())
 	}
 
-	expectedKeys := []string{"Vfoo", "Vbar.Vstring", "Vbar.Vuint", "Vbar"}
+	expectedKeys := []string{"Vbar", "Vbar.Vstring", "Vbar.Vuint", "Vfoo"}
+	sort.Strings(md.Keys)
 	if !reflect.DeepEqual(md.Keys, expectedKeys) {
 		t.Fatalf("bad keys: %#v", md.Keys)
 	}
@@ -835,13 +848,13 @@ func TestDecodePath(t *testing.T) {
 	}
 
 	docScript := []byte(document)
-	docMap := map[string]interface{}{}
+	var docMap map[string]interface{}
 	err := json.Unmarshal(docScript, &docMap)
 	if err != nil {
 		t.Fatalf("Unable To Unmarshal Test Document, %s", err)
 	}
 
-	user := User{}
+	var user User
 	DecodePath(docMap, &user)
 
 	session := "06142010_1:b8d011fefbab8bf1753391b074ffedf9578612d676ed2b7f073b5785b"
@@ -893,7 +906,7 @@ func TestDecodeSlicePath(t *testing.T) {
 	}
 
 	sliceScript := []byte(document)
-	sliceMap := []map[string]interface{}{}
+	var sliceMap []map[string]interface{}
 	json.Unmarshal(sliceScript, &sliceMap)
 
 	var myslice1 []NameDoc
@@ -980,7 +993,7 @@ func TestDecodeWithEmbeddedSlice(t *testing.T) {
 	}
 
 	docScript := []byte(document)
-	docMap := map[string]interface{}{}
+	var docMap map[string]interface{}
 	json.Unmarshal(docScript, &docMap)
 
 	items := Items{}
@@ -1003,12 +1016,12 @@ func TestDecodeWithEmbeddedSlice(t *testing.T) {
 
 	age := 10
 	if items.Peoples[0].Age != 10 {
-		t.Errorf("items.Peoples[0].Age should be '%d', we got '%s'", age, items.Peoples[0].Age)
+		t.Errorf("items.Peoples[0].Age should be '%d', we got '%d'", age, items.Peoples[0].Age)
 	}
 
 	barks := "yes"
 	if items.Peoples[0].Animals[0].Barks != barks {
-		t.Errorf("items.Peoples[0].Animals[0].Barks should be '%d', we got '%s'", barks, items.Peoples[0].Animals[0].Barks)
+		t.Errorf("items.Peoples[0].Animals[0].Barks should be '%s', we got '%s'", barks, items.Peoples[0].Animals[0].Barks)
 	}
 }
 
@@ -1024,7 +1037,7 @@ func TestDecodeWithAbstractField(t *testing.T) {
 	}
 
 	docScript := []byte(document)
-	docMap := map[string]interface{}{}
+	var docMap map[string]interface{}
 	json.Unmarshal(docScript, &docMap)
 
 	context := Context{}
@@ -1052,10 +1065,10 @@ func TestDecodePointerToPointer(t *testing.T) {
 	}
 
 	docScript := []byte(document)
-	docMap := map[string]interface{}{}
+	var docMap map[string]interface{}
 	json.Unmarshal(docScript, &docMap)
 
-	context := Context{}
+	var context Context
 	DecodePath(docMap, &context)
 
 	errorDetail := "Invalid Cobrand Credentials"
@@ -1063,5 +1076,63 @@ func TestDecodePointerToPointer(t *testing.T) {
 		if context.Error[0]["errorDetail"].(string) != errorDetail {
 			t.Errorf("context.Error[0][\"errorDetail\"] should be '%s', we got '%s'", errorDetail, context.Error[0]["errorDetail"].(string))
 		}
+	}
+}
+
+func TestBasicPointerTypes(t *testing.T) {
+	t.Parallel()
+
+	input := map[string]interface{}{
+		"vstring": "foo",
+		"vint":    42,
+		"Vuint":   42,
+		"vbool":   true,
+		"Vfloat":  42.42,
+		"vsilent": true,
+		"vdata":   42,
+		"Vnil":    nil,
+	}
+
+	var result BasicPointer
+	err := Decode(input, &result)
+	if err != nil {
+		t.Errorf("got an err: %s", err.Error())
+		t.FailNow()
+	}
+
+	if *result.Vstring != "foo" {
+		t.Errorf("vstring value should be 'foo': %#v", result.Vstring)
+	}
+
+	if *result.Vint != 42 {
+		t.Errorf("vint value should be 42: %#v", result.Vint)
+	}
+
+	if *result.Vuint != 42 {
+		t.Errorf("vuint value should be 42: %#v", result.Vuint)
+	}
+
+	if *result.Vbool != true {
+		t.Errorf("vbool value should be true: %#v", result.Vbool)
+	}
+
+	if *result.Vfloat != 42.42 {
+		t.Errorf("vfloat value should be 42.42: %#v", result.Vfloat)
+	}
+
+	if result.Vextra != nil {
+		t.Errorf("vextra value should be empty: %#v", result.Vextra)
+	}
+
+	if result.vsilent != nil {
+		t.Error("vsilent should not be set, it is unexported")
+	}
+
+	if *result.Vdata != 42 {
+		t.Error("vdata should be valid")
+	}
+
+	if result.Vnil != nil {
+		t.Errorf("vnil value should be empty: %#v", result.Vnil)
 	}
 }
