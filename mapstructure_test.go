@@ -18,6 +18,17 @@ type Basic struct {
 	Vdata   interface{}
 }
 
+type BasicPointer struct {
+	Vstring *string
+	Vint    *int
+	Vuint   *uint
+	Vbool   *bool
+	Vfloat  *float64
+	Vextra  *string
+	vsilent *bool
+	Vdata   *interface{}
+}
+
 type Embedded struct {
 	Basic
 	Vunique string
@@ -1064,5 +1075,58 @@ func TestDecodePointerToPointer(t *testing.T) {
 		if context.Error[0]["errorDetail"].(string) != errorDetail {
 			t.Errorf("context.Error[0][\"errorDetail\"] should be '%s', we got '%s'", errorDetail, context.Error[0]["errorDetail"].(string))
 		}
+	}
+}
+
+func TestBasicPointerTypes(t *testing.T) {
+	t.Parallel()
+
+	input := map[string]interface{}{
+		"vstring": "foo",
+		"vint":    42,
+		"Vuint":   42,
+		"vbool":   true,
+		"Vfloat":  42.42,
+		"vsilent": true,
+		"vdata":   42,
+	}
+
+	var result BasicPointer
+	err := Decode(input, &result)
+	if err != nil {
+		t.Errorf("got an err: %s", err.Error())
+		t.FailNow()
+	}
+
+	if *result.Vstring != "foo" {
+		t.Errorf("vstring value should be 'foo': %#v", result.Vstring)
+	}
+
+	if *result.Vint != 42 {
+		t.Errorf("vint value should be 42: %#v", result.Vint)
+	}
+
+	if *result.Vuint != 42 {
+		t.Errorf("vuint value should be 42: %#v", result.Vuint)
+	}
+
+	if *result.Vbool != true {
+		t.Errorf("vbool value should be true: %#v", result.Vbool)
+	}
+
+	if *result.Vfloat != 42.42 {
+		t.Errorf("vfloat value should be 42.42: %#v", result.Vfloat)
+	}
+
+	if result.Vextra != nil {
+		t.Errorf("vextra value should be empty: %#v", result.Vextra)
+	}
+
+	if result.vsilent != nil {
+		t.Error("vsilent should not be set, it is unexported")
+	}
+
+	if *result.Vdata != 42 {
+		t.Error("vdata should be valid")
 	}
 }
