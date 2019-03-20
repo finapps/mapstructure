@@ -27,6 +27,7 @@ type BasicPointer struct {
 	Vextra  *string
 	vsilent *bool
 	Vdata   *interface{}
+	Vnil    *bool
 }
 
 type Embedded struct {
@@ -1089,6 +1090,7 @@ func TestBasicPointerTypes(t *testing.T) {
 		"Vfloat":  42.42,
 		"vsilent": true,
 		"vdata":   42,
+		"Vnil":    nil,
 	}
 
 	var result BasicPointer
@@ -1128,5 +1130,9 @@ func TestBasicPointerTypes(t *testing.T) {
 
 	if *result.Vdata != 42 {
 		t.Error("vdata should be valid")
+	}
+
+	if result.Vnil != nil {
+		t.Errorf("vnil value should be empty: %#v", result.Vnil)
 	}
 }
