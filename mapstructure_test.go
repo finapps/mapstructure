@@ -668,7 +668,8 @@ func TestMetadata(t *testing.T) {
 		t.Fatalf("err: %s", err.Error())
 	}
 
-	expectedKeys := []string{"Vfoo", "Vbar.Vstring", "Vbar.Vuint", "Vbar"}
+	expectedKeys := []string{"Vbar", "Vbar.Vstring", "Vbar.Vuint", "Vfoo"}
+	sort.Strings(md.Keys)
 	if !reflect.DeepEqual(md.Keys, expectedKeys) {
 		t.Fatalf("bad keys: %#v", md.Keys)
 	}
@@ -835,13 +836,13 @@ func TestDecodePath(t *testing.T) {
 	}
 
 	docScript := []byte(document)
-	docMap := map[string]interface{}{}
+	var docMap map[string]interface{}
 	err := json.Unmarshal(docScript, &docMap)
 	if err != nil {
 		t.Fatalf("Unable To Unmarshal Test Document, %s", err)
 	}
 
-	user := User{}
+	var user User
 	DecodePath(docMap, &user)
 
 	session := "06142010_1:b8d011fefbab8bf1753391b074ffedf9578612d676ed2b7f073b5785b"
@@ -893,7 +894,7 @@ func TestDecodeSlicePath(t *testing.T) {
 	}
 
 	sliceScript := []byte(document)
-	sliceMap := []map[string]interface{}{}
+	var sliceMap []map[string]interface{}
 	json.Unmarshal(sliceScript, &sliceMap)
 
 	var myslice1 []NameDoc
@@ -980,7 +981,7 @@ func TestDecodeWithEmbeddedSlice(t *testing.T) {
 	}
 
 	docScript := []byte(document)
-	docMap := map[string]interface{}{}
+	var docMap map[string]interface{}
 	json.Unmarshal(docScript, &docMap)
 
 	items := Items{}
@@ -1003,12 +1004,12 @@ func TestDecodeWithEmbeddedSlice(t *testing.T) {
 
 	age := 10
 	if items.Peoples[0].Age != 10 {
-		t.Errorf("items.Peoples[0].Age should be '%d', we got '%s'", age, items.Peoples[0].Age)
+		t.Errorf("items.Peoples[0].Age should be '%d', we got '%d'", age, items.Peoples[0].Age)
 	}
 
 	barks := "yes"
 	if items.Peoples[0].Animals[0].Barks != barks {
-		t.Errorf("items.Peoples[0].Animals[0].Barks should be '%d', we got '%s'", barks, items.Peoples[0].Animals[0].Barks)
+		t.Errorf("items.Peoples[0].Animals[0].Barks should be '%s', we got '%s'", barks, items.Peoples[0].Animals[0].Barks)
 	}
 }
 
@@ -1024,7 +1025,7 @@ func TestDecodeWithAbstractField(t *testing.T) {
 	}
 
 	docScript := []byte(document)
-	docMap := map[string]interface{}{}
+	var docMap map[string]interface{}
 	json.Unmarshal(docScript, &docMap)
 
 	context := Context{}
@@ -1052,10 +1053,10 @@ func TestDecodePointerToPointer(t *testing.T) {
 	}
 
 	docScript := []byte(document)
-	docMap := map[string]interface{}{}
+	var docMap map[string]interface{}
 	json.Unmarshal(docScript, &docMap)
 
-	context := Context{}
+	var context Context
 	DecodePath(docMap, &context)
 
 	errorDetail := "Invalid Cobrand Credentials"

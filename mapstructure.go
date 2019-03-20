@@ -34,6 +34,11 @@ type DecoderConfig struct {
 	// (extra keys).
 	ErrorUnused bool
 
+	// ZeroFields, if set to true, will zero fields before writing them.
+	// For example, a map will be emptied before decoded values are put in
+	// it. If this is false, a map will be merged.
+	ZeroFields bool
+
 	// If WeaklyTypedInput is true, the decoder will make the following
 	// "weak" conversions:
 	//
@@ -372,6 +377,8 @@ func (d *Decoder) decode(name string, data interface{}, val reflect.Value) error
 		err = d.decodeMap(name, data, val)
 	case reflect.Slice:
 		err = d.decodeSlice(name, data, val)
+	case reflect.Ptr:
+		err = d.decodePtr(name, data, val)
 	default:
 		// If we reached this point then we weren't able to decode it
 		return fmt.Errorf("%s: unsupported type: %s", name, dataKind)
@@ -853,5 +860,52 @@ func (d *Decoder) decodeStruct(name string, data interface{}, val reflect.Value)
 		}
 	}
 
+	return nil
+}
+
+func (d *Decoder) decodePtr(name string, data interface{}, val reflect.Value) error {
+	// If the input data is nil, then we want to just set the output
+	// pointer to be nil as well.
+	isNil := data == nil
+	if !isNil {
+		switch v := reflect.Indirect(reflect.ValueOf(data)); v.Kind() {
+		case reflect.Chan,
+			reflect.Func,
+			reflect.Interface,
+			reflect.Map,
+			reflect.Ptr,
+			reflect.Slice:
+			isNil = v.IsNil()
+		}
+	}
+	if isNil {
+		if !val.IsNil() && val.CanSet() {
+			nilValue := reflect.New(val.Type()).Elem()
+			val.Set(nilValue)
+		}
+
+		return nil
+	}
+
+	// Create an element of the concrete (non pointer) type and decode
+	// into that. Then set the value of the pointer to this type.
+	valType := val.Type()
+	valElemType := valType.Elem()
+	if val.CanSet() {
+		realVal := val
+		if realVal.IsNil() || d.config.ZeroFields {
+			realVal = reflect.New(valElemType)
+		}
+
+		if err := d.decode(name, data, reflect.Indirect(realVal)); err != nil {
+			return err
+		}
+
+		val.Set(realVal)
+	} else {
+		if err := d.decode(name, data, reflect.Indirect(val)); err != nil {
+			return err
+		}
+	}
 	return nil
 }
